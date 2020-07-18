@@ -2,11 +2,15 @@ name: Docker
 
 on:
   push:
-    # Publish `master` as Docker `latest` image.
+    # Do not execute workflow if irrelevant files changed (README etc)
+    paths-ignore:
+      - README.md
+
+    # Only publish for master branch
     branches:
       - master
 
-    # Publish `v1.2.3` tags as releases.
+    # Publish `v1.2.3` tags as releases (with "v." prefix stripped)
     tags:
       - v*
 
