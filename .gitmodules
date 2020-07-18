@@ -1,3 +1,0 @@
-[submodule "s3ql"]
-	path = s3ql
-	url = git@github.com:s3ql/s3ql.git
