@@ -14,3 +14,8 @@ dugong>=3.4,<4.0
 # test
 pytest>=3.7
 pytest_trio
+
+# GCS optional deps
+requests
+google-auth
+google-auth-oauthlib
