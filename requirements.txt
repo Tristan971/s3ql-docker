@@ -1,0 +1,16 @@
+# build
+setuptools>=1.0
+cython
+wheel
+
+# runtime
+cryptography
+defusedxml
+apsw>=3.7.0
+trio>=0.9
+pyfuse3>=3.0,<4.0
+dugong>=3.4,<4.0
+
+# test
+pytest>=3.7
+pytest_trio

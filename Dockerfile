@@ -10,3 +10,5 @@ RUN dnf install -y \
   python-virtualenv \
   sqlite \
   sqlite-devel
+
+RUN build-s3ql.sh
