@@ -35,18 +35,27 @@ jobs:
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          echo IMAGE_ID=$IMAGE_ID
 
           # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          REF=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          declare -a TAGS
 
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
+          TAGS+=($REF)
 
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
+          # Add tag (if present) with its "v." prefix stripped
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            TAG_NAME=$(echo $REF | sed -e 's/^v//')
+            TAGS+=($TAG_NAME)
+          fi
 
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          # Add `latest` if it was master
+          [ "$REF" == "master" ] && TAGS+=(latest)
+
+          echo "Will push with all tags: ${TAGS[*]}"
+
+          for tag in ${TAGS[*]}; do
+            docker tag $IMAGE_NAME $IMAGE_ID:$tag
+            docker push $IMAGE_ID:$tag
+          done
