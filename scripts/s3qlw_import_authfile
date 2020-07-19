@@ -28,7 +28,7 @@ fi
 echo "Using source file: [$SOURCE_FILE]"
 
 TARGET_FILE=$(readlink -f "${2:-$DEFAULT_AUTHFILE_TARGET}")
-if [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
+if [ -n "$TARGET_FILE" ] && [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
   echo "Using alternative authfile target location: [$TARGET_FILE]"
 fi
 
