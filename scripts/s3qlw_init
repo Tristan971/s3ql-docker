@@ -82,7 +82,9 @@ echo ""
 
 echo ""
 echo "Creating mountpoint folder if absent..."
-mkdir -v /s3-data/data
+if ! [ -d "$MOUNT_DIRECTORY" ]; then
+  mkdir -v "$MOUNT_DIRECTORY"
+fi
 echo ""
 
 echo ""
