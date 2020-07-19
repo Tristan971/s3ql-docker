@@ -17,6 +17,6 @@ if [ -z "$MOUNTPOINT" ]; then
 fi
 echo "Will unmount: [$MOUNTPOINT]"
 
-fusermount \
+fusermount3 \
   -u \
   "$MOUNTPOINT"
