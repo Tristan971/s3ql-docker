@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DEFAULT_AUTHFILE_TARGET="$HOME/.sq3l/authinfo2"
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo "  s3qlw_import_authfile [source]"
+  echo ""
+  echo "Allowed environment variables:"
+  echo "  S3QL_AUTHFILE: Override authfile target location. Default is [~/.sq3l/authinfo2]"
+  echo ""
+}
+
+SOURCE_FILE=${1:-}
+if [ -z "$SOURCE_FILE" ]; then
+  echo "Error: Source file is not set!"
+  help
+  exit 1
+fi
+
+if ! [ -f "$SOURCE_FILE" ]; then
+  echo "Error: Source file [$SOURCE_FILE] not found!"
+  exit 1
+fi
+
+TARGET_FILE=${2:-$DEFAULT_AUTHFILE_TARGET}
+if [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
+  echo "Using alternative authfile target location: [$TARGET_FILE]"
+fi
+
+if [ -f "$TARGET_FILE" ]; then
+  echo "Target file [$TARGET_FILE] exists already! It will be overriden!"
+fi
+
+install \
+  -v \
+  -D \
+  -m 0600 \
+  "$SOURCE_FILE" \
+  "$TARGET_FILE"

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo "  s3qlw_mount [storage-url] [mountpoint]"
+  echo ""
+  echo "Allowed environment variables:"
+  echo "  S3QL_AUTHFILE: Override authfile location. Default is [~/.sq3l/authinfo2]"
+  echo ""
+}
+
+STORAGE_URL=${S3QL_STORAGE_URL:-${1:-}}
+if [ -z "$STORAGE_URL" ]; then
+  echo "Error: Storage url not defined!"
+  help
+  exit 1
+fi
+echo "Using storage url: [$STORAGE_URL]"
+
+MOUNTPOINT=${S3QL_MOUNTPOINT:-/mnt/s3ql}
+if [ -z "$MOUNTPOINT" ]; then
+  echo "Error: Mountpoint not defined!"
+  help
+  exit 1
+fi
+echo "Using mountpoint: [$MOUNTPOINT]"
+
+AUTHFILE_ARG=""
+if [[ -n "${S3QL_AUTHFILE:-}" ]]; then
+  AUTHFILE_ARG="--authfile $S3QL_AUTHFILE"
+  echo "Using alternative authfile location: [$S3QL_AUTHFILE]"
+fi
+
+mount.s3ql \
+  "$AUTHFILE_ARG" \
+  --allow-other \
+  "$STORAGE_URL" \
+  "$MOUNTPOINT"

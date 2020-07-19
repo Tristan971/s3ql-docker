@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+#
+# Idle
+#
+# This script just prints version information and idles forever (whithout consuming CPU) by tailing /dev/null
+#
+# The main purpose is to keep the container from exiting for the purpose of lifecycle management
+# It is invoked by the `mount` script in the same folder once mounting has finished
+#
+# N.B.: it does *NOT* call the unmount script automatically! You *must* exec that other one before shutting down
+# this container ungracefully, or risk losing data. See: http://www.rath.org/s3ql-docs/umount.html
+#
+
+set -euo pipefail
+
+echo "S3QL-Docker ($(mkfs.s3ql --version)) started successfully!"
+
+echo "Now idling:"
+echo "  - idling method: \"tail -f /dev/null\""
+echo "  - attach with \"docker exec -it <container> bash\""
+
+tail -f /dev/null

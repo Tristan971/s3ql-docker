@@ -31,6 +31,7 @@ WORKDIR /root
 RUN rm -rf /s3ql-src
 RUN dnf clean all
 
-ADD idle-entrypoint /bin/idle-entrypoint
+ADD scripts /bin/s3ql-scripts
+ENV PATH /bin/s3ql-scripts:$PATH
 
-ENTRYPOINT /bin/idle-entrypoint
+ENTRYPOINT s3qlw_idle
