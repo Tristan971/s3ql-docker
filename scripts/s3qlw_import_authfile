@@ -2,7 +2,7 @@
 
 set -uo pipefail
 
-DEFAULT_AUTHFILE_TARGET="$HOME/.sq3l/authinfo2"
+DEFAULT_AUTHFILE_TARGET="$HOME/.s3ql/authinfo2"
 
 function help() {
   echo ""
@@ -10,7 +10,7 @@ function help() {
   echo "  s3qlw_import_authfile [source]"
   echo ""
   echo "Allowed environment variables:"
-  echo "  S3QL_AUTHFILE: Override authfile target location. Default is [~/.sq3l/authinfo2]"
+  echo "  S3QL_AUTHFILE: Override authfile target location. Default is [$DEFAULT_AUTHFILE_TARGET]"
   echo ""
 }
 
