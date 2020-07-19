@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "    s3qlw_init"
+  echo "        -a [authfile-location]"
+  echo "        -d [mount-directory]"
+  echo "        -l [lockfile]"
+  echo ""
+  echo "Parameters:"
+  echo ""
+  echo "    [authfile-location] The location of the authentication file to install to"
+  echo "                        ~/.s3ql/authinfo2 with mode 0600"
+  echo ""
+  echo "      [mount-directory] The directory (in the container) that should be passed"
+  echo "                        as mount point when invoking mount.s3ql"
+  echo ""
+  echo "        [lockfile-path] A file location (relative to [mount-directory]), where"
+  echo "                        an empty file will be created on mount and deleted"
+  echo "                        before unmounting. It allows detecting/blocking multiple"
+  echo "                        s3ql clients from existing, and detect unexpected loss"
+  echo "                        of connectivity, as well as S3 mount being ready for use"
+}
+
+function warn_unset_arg() {
+  echo "Error: $1 was not set!"
+  help
+}
+
+if [ "${1:-}" == "-h" ]; then
+  help
+  exit 0
+fi
+
+while getopts "a:d:l:" opt; do
+  case "${opt}" in
+    a)
+      AUTHFILE_LOCATION="${OPTARG}"
+      echo "- authfile-location: [$AUTHFILE_LOCATION]"
+      ;;
+    d)
+      MOUNT_DIRECTORY="${OPTARG}"
+      echo "- mount-directory: [$MOUNT_DIRECTORY]"
+      ;;
+    l)
+      LOCKFILE_PATH="${OPTARG}"
+      echo "- lockfile-path: [$LOCKFILE_PATH]"
+      ;;
+    :)
+      echo "Error: -${OPTARG} requires an argument."
+      help
+      exit 1
+      ;;
+    *)
+      help
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z "${AUTHFILE_LOCATION:-}" ]; then
+  warn_unset_arg "authfile-location"
+  exit 1
+fi
+if [ -z "${MOUNT_DIRECTORY:-}" ]; then
+  warn_unset_arg "mount-directory"
+  exit 1
+fi
+if [ -z "${LOCKFILE_PATH:-}" ]; then
+  warn_unset_arg "lockfile-path"
+  exit 1
+fi
+
+echo ""
+echo "Installing authfile..."
+s3qlw_import_authfile "$AUTHFILE_LOCATION"
+echo ""
+
+echo ""
+echo "Creating mountpoint folder if absent..."
+mkdir -v /s3-data/data
+echo ""
+
+echo ""
+echo "Mounting bucket at mount-point..."
+s3qlw_mount s3c://s3.fr-par.scw.cloud/s3ql-seed /s3-data/data
+echo ""
+
+echo ""
+echo "Creating lockfile if absent"
+if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
+  echo "***"
+  echo "WARNING. A LOCKFILE WAS ALREADY PRESENT AT [$LOCKFILE_PATH] WITHIN BUCKET"
+  echo ""
+  echo "This could indicate either that another client is already connect, or that"
+  echo "there was a client that was shutdown non-gracefully. If it is the latter,"
+  echo "make sure to follow recovery steps on S3QL's wiki."
+  echo "***"
+  exit 1
+else
+  touch /s3-data/data/.exports-ready
+fi
+echo ""
+
+echo "Finished initializing successfully!"

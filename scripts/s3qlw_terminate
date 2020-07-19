@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "    s3qlw_terminate"
+  echo "        -d [mount-directory]"
+  echo "        -l [lockfile]"
+  echo ""
+  echo "Parameters:"
+
+  echo "      [mount-directory] The directory (in the container) that should be passed"
+  echo "                        as unmounted point when invoking fuse unmount"
+  echo ""
+  echo "        [lockfile-path] A file location (relative to [mount-directory]), where"
+  echo "                        an empty file was created on mount and will be deleted"
+  echo "                        before unmounting."
+  echo "                        See s3qlw_init -h for more information"
+}
+
+function warn_unset_arg() {
+  echo "Error: $1 was not set!"
+  help
+}
+
+if [ "${1:-}" == "-h" ]; then
+  help
+  exit 0
+fi
+
+while getopts "d:l:" opt; do
+  case "${opt}" in
+    d)
+      MOUNT_DIRECTORY="${OPTARG}"
+      echo "- mount-directory: [$MOUNT_DIRECTORY]"
+      ;;
+    l)
+      LOCKFILE_PATH="${OPTARG}"
+      echo "- lockfile-path: [$LOCKFILE_PATH]"
+      ;;
+    :)
+      echo "Error: -${OPTARG} requires an argument."
+      help
+      exit 1
+      ;;
+    *)
+      help
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z "${MOUNT_DIRECTORY:-}" ]; then
+  warn_unset_arg "mount-directory"
+  exit 1
+fi
+if [ -z "${LOCKFILE_PATH:-}" ]; then
+  warn_unset_arg "lockfile-path"
+  exit 1
+fi
+
+echo ""
+echo "Deleting lockfile..."
+rm -v "$LOCKFILE_PATH"
+echo ""
+
+echo ""
+echo "Unmounting bucket..."
+s3qlw_unmount "$MOUNT_DIRECTORY"
+echo ""
+
+echo "Finished graceful unbinding successfully, you can now stop the container!"
