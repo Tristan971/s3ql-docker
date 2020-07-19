@@ -9,7 +9,7 @@ function help() {
   echo ""
 }
 
-MOUNTPOINT=$(readlink -f "${1:-}")
+MOUNTPOINT=${1:-}
 if [ -z "$MOUNTPOINT" ]; then
   echo "Error: Mountpoint not defined!"
   help

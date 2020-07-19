@@ -14,7 +14,7 @@ function help() {
   echo ""
 }
 
-SOURCE_FILE=$(readlink -f "${1:-}")
+SOURCE_FILE=${1:-}
 if [ -z "$SOURCE_FILE" ]; then
   echo "Error: Source file is not set!"
   help
@@ -27,15 +27,14 @@ if ! [ -f "$SOURCE_FILE" ]; then
 fi
 echo "Using source file: [$SOURCE_FILE]"
 
-TARGET_FILE=$(readlink -f "${S3QL_AUTHFILE:-$DEFAULT_AUTHFILE_TARGET}")
-if [ -n "$TARGET_FILE" ] && [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
-  echo "Using alternative authfile target location: [$TARGET_FILE]"
-fi
+TARGET_FILE=${S3QL_AUTHFILE:-$DEFAULT_AUTHFILE_TARGET}
+echo "Using authfile target location: [$TARGET_FILE]"
 
 if [ -f "$TARGET_FILE" ]; then
   echo "Target file [$TARGET_FILE] exists already! It will be overriden!"
 fi
 
+set -x
 install \
   -v \
   -D \

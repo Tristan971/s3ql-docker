@@ -20,7 +20,7 @@ if [ -z "$STORAGE_URL" ]; then
 fi
 echo "Using storage url: [$STORAGE_URL]"
 
-MOUNTPOINT=$(readlink -f "${2:-}")
+MOUNTPOINT=${2:-}
 if [ -z "$MOUNTPOINT" ]; then
   echo "Error: Mountpoint not defined!"
   help
