@@ -12,7 +12,7 @@ function help() {
   echo ""
 }
 
-STORAGE_URL=${S3QL_STORAGE_URL:-${1:-}}
+STORAGE_URL=${1:-}
 if [ -z "$STORAGE_URL" ]; then
   echo "Error: Storage url not defined!"
   help
@@ -20,7 +20,7 @@ if [ -z "$STORAGE_URL" ]; then
 fi
 echo "Using storage url: [$STORAGE_URL]"
 
-MOUNTPOINT=${S3QL_MOUNTPOINT:-/mnt/s3ql}
+MOUNTPOINT=$(readlink -f "${2:-}")
 if [ -z "$MOUNTPOINT" ]; then
   echo "Error: Mountpoint not defined!"
   help

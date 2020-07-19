@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo "  s3qlw_unmount [mountpoint]"
+  echo ""
+}
+
+MOUNTPOINT=$(readlink -f "${1:-}")
+if [ -z "$MOUNTPOINT" ]; then
+  echo "Error: Mountpoint not defined!"
+  help
+  exit 1
+fi
+echo "Will unmount: [$MOUNTPOINT]"
+
+fusermount \
+  -u \
+  "$MOUNTPOINT"

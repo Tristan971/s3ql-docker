@@ -14,7 +14,7 @@ function help() {
   echo ""
 }
 
-SOURCE_FILE=${1:-}
+SOURCE_FILE=$(readlink -f "${1:-}")
 if [ -z "$SOURCE_FILE" ]; then
   echo "Error: Source file is not set!"
   help
@@ -26,7 +26,7 @@ if ! [ -f "$SOURCE_FILE" ]; then
   exit 1
 fi
 
-TARGET_FILE=${2:-$DEFAULT_AUTHFILE_TARGET}
+TARGET_FILE=$(readlink -f "${2:-$DEFAULT_AUTHFILE_TARGET}")
 if [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
   echo "Using alternative authfile target location: [$TARGET_FILE]"
 fi
