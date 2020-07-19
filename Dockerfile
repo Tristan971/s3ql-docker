@@ -26,7 +26,11 @@ RUN python setup.py build_cython \
   && python3 setup.py build_ext --inplace \
   && python3 setup.py install --user
 
+WORKDIR /root
+
 RUN rm -rf /s3ql-src
 RUN dnf clean all
 
-CMD echo "SQ3L-Docker ($(mkfs.s3ql --version))"
+ADD idle-entrypoint /bin/idle-entrypoint
+
+ENTRYPOINT /bin/idle-entrypoint

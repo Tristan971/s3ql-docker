@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "SQ3L-Docker ($(mkfs.s3ql --version))"
+
+echo "Started successfully!"
+
+echo "Now idling via \"tail -f /dev/null\" - attach with \"docker exec -it <container> bash\""
+tail -f /dev/null
