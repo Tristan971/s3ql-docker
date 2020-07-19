@@ -10,7 +10,6 @@ RUN dnf install -y \
   python \
   python-pip \
   python-devel \
-  python-virtualenv \
   sqlite \
   sqlite-devel
 
