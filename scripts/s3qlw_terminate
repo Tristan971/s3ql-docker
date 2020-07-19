@@ -64,7 +64,7 @@ fi
 
 echo ""
 echo "Deleting lockfile..."
-rm -v "$LOCKFILE_PATH"
+rm -v "$MOUNT_DIRECTORY/$LOCKFILE_PATH"
 echo ""
 
 echo ""
