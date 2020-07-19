@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -uo pipefail
 
 DEFAULT_AUTHFILE_TARGET="$HOME/.sq3l/authinfo2"
 
@@ -25,6 +25,7 @@ if ! [ -f "$SOURCE_FILE" ]; then
   echo "Error: Source file [$SOURCE_FILE] not found!"
   exit 1
 fi
+echo "Using source file: [$SOURCE_FILE]"
 
 TARGET_FILE=$(readlink -f "${2:-$DEFAULT_AUTHFILE_TARGET}")
 if [ "$TARGET_FILE" != "$DEFAULT_AUTHFILE_TARGET" ]; then
