@@ -1,12 +1,11 @@
 FROM fedora:latest
 
-RUN dnf makecache
-
 RUN dnf install -y \
   git \
   gcc \
   fuse3 \
   fuse3-devel \
+  procps-ng \
   python \
   python-pip \
   python-devel \
@@ -34,4 +33,6 @@ RUN dnf clean all
 ADD scripts /bin/s3ql-scripts
 ENV PATH /bin/s3ql-scripts:$PATH
 
-ENTRYPOINT exec s3qlw_idle
+STOPSIGNAL SIGTERM
+
+ENTRYPOINT /bin/s3ql-scripts/s3qlw_idle

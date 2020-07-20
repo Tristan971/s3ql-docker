@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function help() {
+  echo ""
+  echo "Usage:"
+  echo ""
+  echo "    s3qlw_format"
+  echo "        -a [authfile-location]"
+  echo "        -s [storage-url]"
+  echo ""
+  echo "Parameters:"
+  echo ""
+  echo "    [authfile-location] The location of the authentication file to install to"
+  echo "                        ~/.s3ql/authinfo2 with mode 0600"
+  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url"
+  echo ""
+}
+
+function warn_unset_arg() {
+  echo "Error: $1 was not set!"
+  help
+}
+
+if [ "${1:-}" == "-h" ]; then
+  help
+  exit 0
+fi
+
+echo "Invoked with [ $* ]:"
+
+while getopts "a:d:l:s:" opt; do
+  case "${opt}" in
+    a)
+      AUTHFILE_LOCATION="${OPTARG}"
+      echo " - authfile-location: [$AUTHFILE_LOCATION]"
+      ;;
+    s)
+      STORAGE_URL="${OPTARG}"
+      echo " - storage-url: [$STORAGE_URL]"
+      ;;
+    :)
+      echo "Error: -${OPTARG} requires an argument."
+      help
+      exit 1
+      ;;
+    *)
+      help
+      exit 1
+      ;;
+  esac
+done
+echo ""
+
+if [ -z "${AUTHFILE_LOCATION:-}" ]; then
+  warn_unset_arg "authfile-location"
+  exit 1
+fi
+if [ -z "${STORAGE_URL:-}" ]; then
+  warn_unset_arg "storage-url"
+  exit 1
+fi
+
+echo "Importing key:"
+s3qlw_import_authfile "$AUTHFILE_LOCATION"
+echo ""
+
+echo "Clearing (will run twice, to ensure full-clear)"
+echo "1/2:"
+echo ""
+s3qladm clear "$STORAGE_URL"
+echo ""
+
+echo "2/2:"
+echo ""
+s3qladm clear "$STORAGE_URL"
+echo ""
+
+echo "Formatting bucket:"
+mkfs.s3ql --plain "$STORAGE_URL"
+echo ""
+
+echo "Done!"

@@ -14,10 +14,21 @@
 
 set -euo pipefail
 
+function bye() {
+  echo ""
+  echo "Bye bye! (graceful exit works)"
+  echo ""
+}
+
 echo "S3QL-Docker ($(mkfs.s3ql --version)) started successfully!"
 
 echo "Now idling:"
 echo "  - idling method: \"tail -f /dev/null\""
 echo "  - attach with \"docker exec -it <container> bash\""
 
-tail -f /dev/null
+trap bye TERM INT
+
+while true; do
+  tail -f /dev/null &
+  wait ${!}
+done

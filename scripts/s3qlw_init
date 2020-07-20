@@ -44,10 +44,34 @@ function warn_unset_arg() {
   help
 }
 
+function separator() {
+  echo "**************************"
+}
+
+function exec_with_setx() {
+  # we do actually want array splitting here
+  # shellcheck disable=SC2068
+  (
+    set -x
+    $@
+  )
+}
+
 function cleanup() {
   echo ""
+  separator
   echo "Received exit signal. Cleaning up and exiting."
-  s3qlw_terminate -d "$MOUNT_DIRECTORY" -l "$LOCKFILE_PATH"
+
+  echo ""
+  echo "Deleting lockfile..."
+  rm -v "$MOUNT_DIRECTORY/$LOCKFILE_PATH"
+  echo ""
+
+  echo ""
+  echo "Unmounting bucket..."
+  exec_with_setx umount.s3ql "$MOUNT_DIRECTORY"
+  echo ""
+
   exit 0
 }
 
@@ -56,23 +80,26 @@ if [ "${1:-}" == "-h" ]; then
   exit 0
 fi
 
+separator
+echo "Invoked with [ $* ]:"
+
 while getopts "a:d:l:s:" opt; do
   case "${opt}" in
     a)
       AUTHFILE_LOCATION="${OPTARG}"
-      echo "- authfile-location: [$AUTHFILE_LOCATION]"
+      echo " - authfile-location: [$AUTHFILE_LOCATION]"
       ;;
     d)
       MOUNT_DIRECTORY="${OPTARG}"
-      echo "- mount-directory: [$MOUNT_DIRECTORY]"
+      echo " - mount-directory: [$MOUNT_DIRECTORY]"
       ;;
     l)
       LOCKFILE_PATH="${OPTARG}"
-      echo "- lockfile-path: [$LOCKFILE_PATH]"
+      echo " - lockfile-path: [$LOCKFILE_PATH]"
       ;;
     s)
       STORAGE_URL="${OPTARG}"
-      echo "- storage-url: [$STORAGE_URL]"
+      echo " - storage-url: [$STORAGE_URL]"
       ;;
     :)
       echo "Error: -${OPTARG} requires an argument."
@@ -85,6 +112,11 @@ while getopts "a:d:l:s:" opt; do
       ;;
   esac
 done
+echo ""
+
+separator
+echo "Validating arguments"
+echo ""
 
 if [ -z "${AUTHFILE_LOCATION:-}" ]; then
   warn_unset_arg "authfile-location"
@@ -98,29 +130,32 @@ if [ -z "${LOCKFILE_PATH:-}" ]; then
   warn_unset_arg "lockfile-path"
   exit 1
 fi
-if [ -z "${LOCKFILE_PATH:-}" ]; then
+if [ -z "${STORAGE_URL:-}" ]; then
   warn_unset_arg "storage-url"
   exit 1
 fi
 
+echo "Arguments are valid"
 echo ""
+
+separator
 echo "Installing authfile..."
 s3qlw_import_authfile "$AUTHFILE_LOCATION"
 echo ""
 
-echo ""
+separator
 echo "Creating mountpoint folder if absent..."
 if ! [ -d "$MOUNT_DIRECTORY" ]; then
-  mkdir -v "$MOUNT_DIRECTORY"
+  exec_with_setx mkdir -v "$MOUNT_DIRECTORY"
 fi
 echo ""
 
-echo ""
+separator
 echo "Mounting bucket at mount-point..."
-s3qlw_mount "$STORAGE_URL" "$MOUNT_DIRECTORY"
+exec_with_setx mount.s3ql --allow-other "$STORAGE_URL" "$MOUNT_DIRECTORY"
 echo ""
 
-echo ""
+separator
 echo "Creating lockfile if absent"
 if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
   echo "***"
@@ -138,18 +173,19 @@ if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
     exit 1
   fi
 else
-  echo "$(date +%s) | Host: $HOSTNAME | PID: $$" | tee "$MOUNT_DIRECTORY/$LOCKFILE_PATH"
+  exec_with_setx echo "$(date +%s) | Host: $HOSTNAME | PID: $$" > "$MOUNT_DIRECTORY/$LOCKFILE_PATH"
 fi
 echo ""
 
-echo ""
+separator
 echo "Setting up graceful exit handler"
-trap cleanup TERM
-trap cleanup INT
-trap cleanup HUP
-trap cleanup EXIT
+trap cleanup TERM INT
 echo ""
 
-echo ""
+separator
 echo "S3QL-Docker ($(mkfs.s3ql --version)) started successfully!"
-tail -f /dev/null
+
+while true; do
+  tail -f /dev/null &
+  wait ${!}
+done
