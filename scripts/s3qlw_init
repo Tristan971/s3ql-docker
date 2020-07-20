@@ -24,6 +24,15 @@ function help() {
   echo "                        before unmounting. It allows detecting/blocking multiple"
   echo "                        s3ql clients from existing, and detect unexpected loss"
   echo "                        of connectivity, as well as S3 mount being ready for use"
+  echo ""
+  echo "Environment variables:"
+  echo ""
+  echo "    UNSAFE_S3QL_IGNORE_LOCKFILE_ON_START When set to \"true\", tells the init"
+  echo "                                         script to proceed even if a lockfile"
+  echo "                                         already exists. This allows relatively"
+  echo "                                         easy recovery if you are onfident in the"
+  echo "                                         safety of doing so."
+  echo ""
 }
 
 function warn_unset_arg() {
@@ -102,10 +111,18 @@ if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
   echo "there was a client that was shutdown non-gracefully. If it is the latter,"
   echo "make sure to follow recovery steps on S3QL's wiki."
   echo "***"
-  exit 1
+
+  if [ "${UNSAFE_S3QL_IGNORE_LOCKFILE_ON_START:-false}" == "true" ]; then
+    echo "UNSAFE_S3QL_IGNORE_LOCKFILE_ON_START was set to true. Bypassing lockfile."
+  else
+    echo "Bailing."
+    exit 1
+  fi
 else
   touch /s3-data/data/.exports-ready
 fi
 echo ""
 
 echo "Finished initializing successfully!"
+
+s3qlw_idle
