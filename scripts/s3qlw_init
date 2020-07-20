@@ -3,40 +3,47 @@
 set -euo pipefail
 
 function help() {
-  echo ""
-  echo "Usage:"
-  echo ""
-  echo "    s3qlw_init"
-  echo "        -a [authfile-location]"
-  echo "        -d [mount-directory]"
-  echo "        -l [lockfile]"
-  echo "        -s [storage-url]"
-  echo ""
-  echo "Parameters:"
-  echo ""
-  echo "    [authfile-location] The location of the authentication file to install to"
-  echo "                        ~/.s3ql/authinfo2 with mode 0600"
-  echo ""
-  echo "      [mount-directory] The directory (in the container) that should be passed"
-  echo "                        as mount point when invoking mount.s3ql"
-  echo ""
-  echo "        [lockfile-path] A file location (relative to [mount-directory]), where"
-  echo "                        an empty file will be created on mount and deleted"
-  echo "                        before unmounting. It allows detecting/blocking multiple"
-  echo "                        s3ql clients from existing, and detect unexpected loss"
-  echo "                        of connectivity, as well as S3 mount being ready for use"
-  echo ""
-  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url"
-  echo ""
-  echo ""
-  echo "Environment variables:"
-  echo ""
-  echo "    UNSAFE_S3QL_IGNORE_LOCKFILE_ON_START When set to \"true\", tells the init"
-  echo "                                         script to proceed even if a lockfile"
-  echo "                                         already exists. This allows relatively"
-  echo "                                         easy recovery if you are onfident in the"
-  echo "                                         safety of doing so."
-  echo ""
+  echo "                                                                                "
+  echo "* Usage:                                                                        "
+  echo "    s3qlw_init [[flag argument]...]                                             "
+  echo "                                                                                "
+  echo "* Flags:                                                                        "
+  echo "    Mandatory:                                                                  "
+  echo "        -a [authfile-location]                                                  "
+  echo "        -d [mount-directory]                                                    "
+  echo "        -s [storage-url]                                                        "
+  echo "        -l [lockfile]                                                           "
+  echo "    Optional:                                                                   "
+  echo "        -c [cacheopts]                                                          "
+  echo "                                                                                "
+  echo "* Arguments: (? = optional)                                                     "
+  echo "                                                                                "
+  echo "    [authfile-location] The location of the authentication file to install to   "
+  echo "                        ~/.s3ql/authinfo2 with mode 0600                        "
+  echo "                                                                                "
+  echo "      [mount-directory] The directory (in the container) that should be passed  "
+  echo "                        as mount point when invoking mount.s3ql                 "
+  echo "                                                                                "
+  echo "           [cacheopts]? Cache options to pass to mount.s3ql, in the format      "
+  echo "                        <path>:<size in KiB>                                    "
+  echo "                        Invoking s3qlw_init ... -c /cache:10                    "
+  echo "                        Triggers mount.s3ql --cachedir /cache --cachesize 10    "
+  echo "                                                                                "
+  echo "        [lockfile-path] A file location (relative to [mount-directory]), where  "
+  echo "                        an empty file will be created on mount and deleted      "
+  echo "                        before unmounting.                                      "
+  echo "                                                                                "
+  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url        "
+  echo "                                                                                "
+  echo "                                                                                "
+  echo "* Environment variables:                                                        "
+  echo "                                                                                "
+  echo "    UNSAFE_S3QL_IGNORE_LOCKFILE_ON_START:                                       "
+  echo "        When set to true, tells the init script to proceed even if a lockfile   "
+  echo "        already exists. This allows relatively easy recovery if you are         "
+  echo "        confident in the safety of doing so.                                    "
+  echo "        Note: s3ql additionally has its own checks, which this doesn't bypass.  "
+  echo "                                                                                "
 }
 
 function warn_unset_arg() {
@@ -83,7 +90,7 @@ fi
 separator
 echo "Invoked with [ $* ]:"
 
-while getopts "a:d:l:s:" opt; do
+while getopts "a:d:c:l:s:" opt; do
   case "${opt}" in
     a)
       AUTHFILE_LOCATION="${OPTARG}"
@@ -100,6 +107,10 @@ while getopts "a:d:l:s:" opt; do
     s)
       STORAGE_URL="${OPTARG}"
       echo " - storage-url: [$STORAGE_URL]"
+      ;;
+    c)
+      CACHEOPTS=${OPTARG}
+      echo " - cacheopts: [$CACHEOPTS]"
       ;;
     :)
       echo "Error: -${OPTARG} requires an argument."
@@ -135,6 +146,20 @@ if [ -z "${STORAGE_URL:-}" ]; then
   exit 1
 fi
 
+CACHE_ARGS=()
+if [ -n "${CACHEOPTS:-}" ]; then
+  echo "Received cache configuration overrides: [$CACHEOPTS]"
+
+  CACHE_PATH="$(echo "${CACHEOPTS}" | cut -d ':' -f1)"
+  echo "Cache path: [$CACHE_PATH]"
+  [ -d "$CACHE_PATH" ] || mkdir -pv "$CACHE_PATH"
+  CACHE_ARGS+=("--cachedir $CACHE_PATH")
+
+  CACHE_SIZE="$(echo "${CACHEOPTS}" | cut -d ':' -f2)"
+  echo "Cache size: [$CACHE_SIZE] KiB"
+  CACHE_ARGS+=("--cachesize $CACHE_SIZE")
+fi
+
 echo "Arguments are valid"
 echo ""
 
@@ -152,7 +177,7 @@ echo ""
 
 separator
 echo "Mounting bucket at mount-point..."
-exec_with_setx mount.s3ql --allow-other "$STORAGE_URL" "$MOUNT_DIRECTORY"
+exec_with_setx mount.s3ql --allow-other "${CACHE_ARGS[@]}" "$STORAGE_URL" "$MOUNT_DIRECTORY"
 echo ""
 
 separator
