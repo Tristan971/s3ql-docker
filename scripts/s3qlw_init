@@ -40,6 +40,12 @@ function warn_unset_arg() {
   help
 }
 
+function cleanup() {
+  echo "Received exit signal. Cleaning up and exiting."
+  s3qlw_terminate -d "$MOUNT_DIRECTORY" -l "$LOCKFILE_PATH"
+  exit 0
+}
+
 if [ "${1:-}" == "-h" ]; then
   help
   exit 0
@@ -121,6 +127,11 @@ if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
 else
   touch /s3-data/data/.exports-ready
 fi
+echo ""
+
+echo ""
+echo "Setting up graceful exit handler"
+trap cleanup TERM
 echo ""
 
 echo "Finished initializing successfully!"
