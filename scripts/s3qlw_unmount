@@ -17,6 +17,5 @@ if [ -z "$MOUNTPOINT" ]; then
 fi
 echo "Will unmount: [$MOUNTPOINT]"
 
-fusermount3 \
-  -u \
-  "$MOUNTPOINT"
+set -x
+umount.s3ql "$MOUNTPOINT"

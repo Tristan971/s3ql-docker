@@ -10,6 +10,7 @@ RUN dnf install -y \
   python \
   python-pip \
   python-devel \
+  psmisc \
   sqlite \
   sqlite-devel
 
@@ -33,4 +34,4 @@ RUN dnf clean all
 ADD scripts /bin/s3ql-scripts
 ENV PATH /bin/s3ql-scripts:$PATH
 
-ENTRYPOINT s3qlw_idle
+ENTRYPOINT exec s3qlw_idle

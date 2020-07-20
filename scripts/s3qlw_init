@@ -10,6 +10,7 @@ function help() {
   echo "        -a [authfile-location]"
   echo "        -d [mount-directory]"
   echo "        -l [lockfile]"
+  echo "        -s [storage-url]"
   echo ""
   echo "Parameters:"
   echo ""
@@ -24,6 +25,9 @@ function help() {
   echo "                        before unmounting. It allows detecting/blocking multiple"
   echo "                        s3ql clients from existing, and detect unexpected loss"
   echo "                        of connectivity, as well as S3 mount being ready for use"
+  echo ""
+  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url"
+  echo ""
   echo ""
   echo "Environment variables:"
   echo ""
@@ -41,6 +45,7 @@ function warn_unset_arg() {
 }
 
 function cleanup() {
+  echo ""
   echo "Received exit signal. Cleaning up and exiting."
   s3qlw_terminate -d "$MOUNT_DIRECTORY" -l "$LOCKFILE_PATH"
   exit 0
@@ -51,7 +56,7 @@ if [ "${1:-}" == "-h" ]; then
   exit 0
 fi
 
-while getopts "a:d:l:" opt; do
+while getopts "a:d:l:s:" opt; do
   case "${opt}" in
     a)
       AUTHFILE_LOCATION="${OPTARG}"
@@ -64,6 +69,10 @@ while getopts "a:d:l:" opt; do
     l)
       LOCKFILE_PATH="${OPTARG}"
       echo "- lockfile-path: [$LOCKFILE_PATH]"
+      ;;
+    s)
+      STORAGE_URL="${OPTARG}"
+      echo "- storage-url: [$STORAGE_URL]"
       ;;
     :)
       echo "Error: -${OPTARG} requires an argument."
@@ -89,6 +98,10 @@ if [ -z "${LOCKFILE_PATH:-}" ]; then
   warn_unset_arg "lockfile-path"
   exit 1
 fi
+if [ -z "${LOCKFILE_PATH:-}" ]; then
+  warn_unset_arg "storage-url"
+  exit 1
+fi
 
 echo ""
 echo "Installing authfile..."
@@ -104,7 +117,7 @@ echo ""
 
 echo ""
 echo "Mounting bucket at mount-point..."
-s3qlw_mount s3c://s3.fr-par.scw.cloud/s3ql-seed /s3-data/data
+s3qlw_mount "$STORAGE_URL" "$MOUNT_DIRECTORY"
 echo ""
 
 echo ""
@@ -125,15 +138,16 @@ if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
     exit 1
   fi
 else
-  touch /s3-data/data/.exports-ready
+  touch "$MOUNT_DIRECTORY"/"$LOCKFILE_PATH"
 fi
 echo ""
 
 echo ""
 echo "Setting up graceful exit handler"
 trap cleanup TERM
+trap cleanup EXIT
 echo ""
 
-echo "Finished initializing successfully!"
-
-s3qlw_idle
+echo ""
+echo "S3QL-Docker ($(mkfs.s3ql --version)) started successfully!"
+tail -f /dev/null
