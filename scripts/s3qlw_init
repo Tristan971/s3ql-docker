@@ -138,13 +138,15 @@ if [ -f "$MOUNT_DIRECTORY/$LOCKFILE_PATH" ]; then
     exit 1
   fi
 else
-  touch "$MOUNT_DIRECTORY"/"$LOCKFILE_PATH"
+  echo "$(date +%s) | Host: $HOSTNAME | PID: $$" | tee "$MOUNT_DIRECTORY/$LOCKFILE_PATH"
 fi
 echo ""
 
 echo ""
 echo "Setting up graceful exit handler"
 trap cleanup TERM
+trap cleanup INT
+trap cleanup HUP
 trap cleanup EXIT
 echo ""
 
