@@ -13,7 +13,7 @@ function help() {
   echo "        -d [mount-directory]                                                    "
   echo "        -s [storage-url]                                                        "
   echo "        -l [lockfile]                                                           "
-  echo "        -x [compression-level]                                                  "
+  echo "        -x [compression-algorithm]                                              "
   echo "    Optional:                                                                   "
   echo "        -c [cacheopts]                                                          "
   echo "        -t [upload-threads]                                                     "
@@ -33,8 +33,9 @@ function help() {
   echo "                        an empty file will be created on mount and deleted      "
   echo "                        before unmounting.                                      "
   echo "                                                                                "
-  echo "    [compression-level] The compression algorithm used by s3ql when storing     "
-  echo "                        data, from 0 (fastest) to 9 (slowest). Default is 6.    "
+  echo "[compression-algorithm] The compression algorithm used by s3ql when storing     "
+  echo "                        data. Options, from Fastest/least-efficient to          "
+  echo "                        slowest/most-efficient are: none, zlib, bzip2, lzma     "
   echo "                                                                                "
   echo "           [cacheopts]? Cache options to pass to mount.s3ql, in the format      "
   echo "                        <path>:<size in KiB>                                    "
@@ -119,8 +120,8 @@ while getopts "a:d:s:l:x:c:t:n" opt; do
       echo " - lockfile-path: [$LOCKFILE_PATH]"
       ;;
     x)
-      COMPRESSION_LEVEL="${OPTARG}"
-      echo " - compression-level: [$COMPRESSION_LEVEL]"
+      COMPRESSION_ALGORITHM="${OPTARG}"
+      echo " - compression-algorithm: [$COMPRESSION_ALGORITHM]"
       ;;
     c)
       CACHEOPTS=${OPTARG}
@@ -177,9 +178,9 @@ echo ""
 echo "Arguments for mount.s3ql..."
 MOUNT_S3QL_ARGS=("--allow-other")
 
-if [ -n "$COMPRESSION_LEVEL" ]; then
-  echo "    Compression level: $COMPRESSION_LEVEL"
-  MOUNT_S3QL_ARGS+=("--compress $COMPRESSION_LEVEL")
+if [ -n "$COMPRESSION_ALGORITHM" ]; then
+  echo "    Compression algorithm: $COMPRESSION_ALGORITHM"
+  MOUNT_S3QL_ARGS+=("--compress $COMPRESSION_ALGORITHM")
 fi
 
 if [ -n "${CACHEOPTS:-}" ]; then
