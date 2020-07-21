@@ -15,6 +15,8 @@ function help() {
   echo "        -l [lockfile]                                                           "
   echo "    Optional:                                                                   "
   echo "        -c [cacheopts]                                                          "
+  echo "        -t [upload-threads]                                                     "
+  echo "        -n if present, pass '--nfs' to mount.s3ql                               "
   echo "                                                                                "
   echo "* Arguments: (? = optional)                                                     "
   echo "                                                                                "
@@ -35,6 +37,9 @@ function help() {
   echo "                                                                                "
   echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url        "
   echo "                                                                                "
+  echo "       [upload-threads] set the number of upload threads to use, equivalent     "
+  echo "                        to passing --threads [upload-threads] to mount.s3ql     "
+  echo "                                                                                "
   echo "                                                                                "
   echo "* Environment variables:                                                        "
   echo "                                                                                "
@@ -47,6 +52,7 @@ function help() {
 }
 
 function warn_unset_arg() {
+  printf "\n"
   echo "Error: $1 was not set!"
   help
 }
@@ -90,7 +96,7 @@ fi
 separator
 echo "Invoked with [ $* ]:"
 
-while getopts "a:d:c:l:s:" opt; do
+while getopts "a:d:c:l:s:t:n" opt; do
   case "${opt}" in
     a)
       AUTHFILE_LOCATION="${OPTARG}"
@@ -112,6 +118,14 @@ while getopts "a:d:c:l:s:" opt; do
       CACHEOPTS=${OPTARG}
       echo " - cacheopts: [$CACHEOPTS]"
       ;;
+    n)
+      ENABLE_NFS="true"
+      echo " - nfs-optimizations: [$ENABLE_NFS]"
+      ;;
+    t)
+      UPLOAD_THREADS_COUNT=${OPTARG}
+      echo " - upload-threads: [$UPLOAD_THREADS_COUNT]"
+      ;;
     :)
       echo "Error: -${OPTARG} requires an argument."
       help
@@ -129,6 +143,8 @@ separator
 echo "Validating arguments"
 echo ""
 
+# Wrapper lifecycle arguments
+printf "Mandatory arguments are set... "
 if [ -z "${AUTHFILE_LOCATION:-}" ]; then
   warn_unset_arg "authfile-location"
   exit 1
@@ -145,20 +161,44 @@ if [ -z "${STORAGE_URL:-}" ]; then
   warn_unset_arg "storage-url"
   exit 1
 fi
+printf "OK\n"
 
-CACHE_ARGS=()
+echo ""
+
+# mount.s3ql arguments
+echo "Arguments for mount.s3ql..."
+MOUNT_S3QL_ARGS=("--allow-other")
+
 if [ -n "${CACHEOPTS:-}" ]; then
-  echo "Received cache configuration overrides: [$CACHEOPTS]"
+  echo " - Cache configuration: [$CACHEOPTS]"
 
   CACHE_PATH="$(echo "${CACHEOPTS}" | cut -d ':' -f1)"
-  echo "Cache path: [$CACHE_PATH]"
-  [ -d "$CACHE_PATH" ] || mkdir -pv "$CACHE_PATH"
-  CACHE_ARGS+=("--cachedir $CACHE_PATH")
+  printf "    Path: [%s]" "$CACHE_PATH"
+  MOUNT_S3QL_ARGS+=("--cachedir $CACHE_PATH")
+  if [ -d "$CACHE_PATH" ]; then
+    printf " (existing, will be overwritten)\n"
+  else
+    mkdir -p "$CACHE_PATH"
+    printf " (created)\n"
+  fi
 
   CACHE_SIZE="$(echo "${CACHEOPTS}" | cut -d ':' -f2)"
-  echo "Cache size: [$CACHE_SIZE] KiB"
-  CACHE_ARGS+=("--cachesize $CACHE_SIZE")
+  echo "    Size: [$CACHE_SIZE] KiB"
+  MOUNT_S3QL_ARGS+=("--cachesize $CACHE_SIZE")
 fi
+
+if [ "${ENABLE_NFS:-}" == "true" ]; then
+  echo " - NFS optimizations enabled"
+  MOUNT_S3QL_ARGS+=("--nfs")
+fi
+
+if [ -n "${UPLOAD_THREADS_COUNT:-}" ]; then
+  echo " - Will use [$UPLOAD_THREADS_COUNT] upload threads"
+  MOUNT_S3QL_ARGS+=("--threads $UPLOAD_THREADS_COUNT")
+fi
+
+echo "Generated flags for mount.s3ql: [${MOUNT_S3QL_ARGS[*]}]"
+echo ""
 
 echo "Arguments are valid"
 echo ""
@@ -177,7 +217,7 @@ echo ""
 
 separator
 echo "Mounting bucket at mount-point..."
-exec_with_setx mount.s3ql --allow-other "${CACHE_ARGS[@]}" "$STORAGE_URL" "$MOUNT_DIRECTORY"
+exec_with_setx mount.s3ql --allow-other "${MOUNT_S3QL_ARGS[@]}" "$STORAGE_URL" "$MOUNT_DIRECTORY"
 echo ""
 
 separator
