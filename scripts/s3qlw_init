@@ -13,6 +13,7 @@ function help() {
   echo "        -d [mount-directory]                                                    "
   echo "        -s [storage-url]                                                        "
   echo "        -l [lockfile]                                                           "
+  echo "        -x [compression-level]                                                  "
   echo "    Optional:                                                                   "
   echo "        -c [cacheopts]                                                          "
   echo "        -t [upload-threads]                                                     "
@@ -26,18 +27,21 @@ function help() {
   echo "      [mount-directory] The directory (in the container) that should be passed  "
   echo "                        as mount point when invoking mount.s3ql                 "
   echo "                                                                                "
-  echo "           [cacheopts]? Cache options to pass to mount.s3ql, in the format      "
-  echo "                        <path>:<size in KiB>                                    "
-  echo "                        Invoking s3qlw_init ... -c /cache:10                    "
-  echo "                        Triggers mount.s3ql --cachedir /cache --cachesize 10    "
+  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url        "
   echo "                                                                                "
   echo "        [lockfile-path] A file location (relative to [mount-directory]), where  "
   echo "                        an empty file will be created on mount and deleted      "
   echo "                        before unmounting.                                      "
   echo "                                                                                "
-  echo "          [storage-url] s3ql-formatted (s3://..., s3c://...) storage url        "
+  echo "    [compression-level] The compression algorithm used by s3ql when storing     "
+  echo "                        data, from 0 (fastest) to 9 (slowest). Default is 6.    "
   echo "                                                                                "
-  echo "       [upload-threads] set the number of upload threads to use, equivalent     "
+  echo "           [cacheopts]? Cache options to pass to mount.s3ql, in the format      "
+  echo "                        <path>:<size in KiB>                                    "
+  echo "                        Invoking s3qlw_init ... -c /cache:10                    "
+  echo "                        Triggers mount.s3ql --cachedir /cache --cachesize 10    "
+  echo "                                                                                "
+  echo "       [upload-threads]? set the number of upload threads to use, equivalent    "
   echo "                        to passing --threads [upload-threads] to mount.s3ql     "
   echo "                                                                                "
   echo "                                                                                "
@@ -96,7 +100,7 @@ fi
 separator
 echo "Invoked with [ $* ]:"
 
-while getopts "a:d:c:l:s:t:n" opt; do
+while getopts "a:d:s:l:x:c:t:n" opt; do
   case "${opt}" in
     a)
       AUTHFILE_LOCATION="${OPTARG}"
@@ -106,25 +110,29 @@ while getopts "a:d:c:l:s:t:n" opt; do
       MOUNT_DIRECTORY="${OPTARG}"
       echo " - mount-directory: [$MOUNT_DIRECTORY]"
       ;;
+    s)
+      STORAGE_URL="${OPTARG}"
+      echo " - storage-url: [$STORAGE_URL]"
+      ;;
     l)
       LOCKFILE_PATH="${OPTARG}"
       echo " - lockfile-path: [$LOCKFILE_PATH]"
       ;;
-    s)
-      STORAGE_URL="${OPTARG}"
-      echo " - storage-url: [$STORAGE_URL]"
+    x)
+      COMPRESSION_LEVEL="${OPTARG}"
+      echo " - compression-level: [$COMPRESSION_LEVEL]"
       ;;
     c)
       CACHEOPTS=${OPTARG}
       echo " - cacheopts: [$CACHEOPTS]"
       ;;
-    n)
-      ENABLE_NFS="true"
-      echo " - nfs-optimizations: [$ENABLE_NFS]"
-      ;;
     t)
       UPLOAD_THREADS_COUNT=${OPTARG}
       echo " - upload-threads: [$UPLOAD_THREADS_COUNT]"
+      ;;
+    n)
+      ENABLE_NFS="true"
+      echo " - nfs-optimizations: [$ENABLE_NFS]"
       ;;
     :)
       echo "Error: -${OPTARG} requires an argument."
@@ -168,6 +176,11 @@ echo ""
 # mount.s3ql arguments
 echo "Arguments for mount.s3ql..."
 MOUNT_S3QL_ARGS=("--allow-other")
+
+if [ -n "$COMPRESSION_LEVEL" ]; then
+  echo "    Compression level: $COMPRESSION_LEVEL"
+  MOUNT_S3QL_ARGS+=("--compress $COMPRESSION_LEVEL")
+fi
 
 if [ -n "${CACHEOPTS:-}" ]; then
   echo " - Cache configuration: [$CACHEOPTS]"
