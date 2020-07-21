@@ -11,24 +11,20 @@ RUN dnf install -y \
   python-devel \
   psmisc \
   sqlite \
-  sqlite-devel
+  sqlite-devel \
+  && dnf clean all
 
-RUN git clone -b release-3.5.0 https://github.com/s3ql/s3ql.git /s3ql-src
-WORKDIR /s3ql-src
-
-ENV PATH $PATH:/root/.local/bin
-
-ADD requirements.txt .
+ADD requirements.txt /requirements.txt
 RUN pip install --user -r requirements.txt
+ENV PATH /root/.local/bin:$PATH
 
-RUN python setup.py build_cython \
+RUN git clone -b release-3.5.0 https://github.com/s3ql/s3ql.git /s3ql-src \
+  && cd /s3ql-src \
+  && python setup.py build_cython \
   && python3 setup.py build_ext --inplace \
-  && python3 setup.py install --user
-
-WORKDIR /root
-
-RUN rm -rf /s3ql-src
-RUN dnf clean all
+  && python3 setup.py install --user \
+  && cd /root \
+  && rm -rf /s3ql-src
 
 ADD scripts /bin/s3ql-scripts
 ENV PATH /bin/s3ql-scripts:$PATH
