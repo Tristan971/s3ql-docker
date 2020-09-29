@@ -1,3 +1,9 @@
+# Archival
+
+A better solution is at https://github.com/Tristan971/s3ql/tree/191-container-friendliness pending upstream merge.
+
+Don't use this project, use that other one instead, as it is much better.
+
 # s3ql-docker
 
 An [s3ql](https://github.com/s3ql/s3ql) wrapper as a docker image.
